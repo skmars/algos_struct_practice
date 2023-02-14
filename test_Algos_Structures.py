@@ -1153,7 +1153,7 @@ class Solutions:
         return area
 
     def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:
-        # dfs
+        # DFS
         preMap = {i: [] for i in range(numCourses)}
 
         # map each course to : prereq list
