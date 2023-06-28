@@ -2,12 +2,10 @@ import functools
 import math
 import heapq
 from msilib.schema import IniFile
-import multiprocessing
-import threading
 from ast import Str
 from typing import Optional, List
 from collections import defaultdict, deque
-from prometheus_client import Counter
+from prometheus_client import Counter 
 from regex import W
 
 
@@ -73,7 +71,7 @@ class Trie:
         curr = self.root
         for c in word:
             i = ord(c) - ord("a")
-            if curr.children[i] == None:
+            if not curr.children[i]:
                 curr.children[i] = TrieNode()
             curr = curr.children[i]
         curr.end = True
@@ -85,7 +83,7 @@ class Trie:
         curr = self.root
         for c in word:
             i = ord(c) - ord("a")
-            if curr.children[i] == None:
+            if not curr.children[i]:
                 return False
             curr = curr.children[i]
         return curr.end
@@ -97,7 +95,7 @@ class Trie:
         curr = self.root
         for c in prefix:
             i = ord(c) - ord("a")
-            if curr.children[i] == None:
+            if not curr.children[i]:
                 return False
             curr = curr.children[i]
         return True
@@ -204,7 +202,7 @@ class Solutions:
 
         for i in range(nl, nh + 1):
             for j in range(0, 10 - i):
-                num = int(digits[j : j + i])
+                num = int(digits[j:j + i])
                 if num >= low and num <= high:
                     res.append(num)
         return res
@@ -223,9 +221,27 @@ class Solutions:
         dfs()
         return list
 
+    def pivotIndex(self, nums: List[int]) -> int:
+        leftSum, rightSum = 0, sum(nums)
+        if sum(nums[1:]) == 0:
+            return 0
+        for i, n in enumerate(nums):
+            rightSum -= n
+            if leftSum == rightSum:
+                return i
+            leftSum += n
+        return -1
+
+    def runningSum(self, nums: List[int]) -> List[int]:
+        arrnum = [nums[0]]
+        for i, j in zip(nums[1:], arrnum):
+            arrnum.append(i + j)
+        return arrnum
+
     def combinationSum(self, candidates: List[int], target: int) -> List[List[int]]:
         if target < 1:
             return "Wrong param!"
+
         # We will try to make dfs
         def dfs(item, current, proceded_sum):
             if proceded_sum == target:
@@ -242,6 +258,62 @@ class Solutions:
         res = []
         dfs(0, [], 0)
         return res
+
+    def isIsomorphic(self, s, t):
+        """
+        :type s: str
+        :type t: str
+        :rtype: bool
+        """
+        if len(s) != len(t):
+            return False
+
+        slist = list()
+        for idx in s:
+            slist.append(s.index(idx))
+        tlist = list()
+        for idx in t:
+            tlist.append(t.index(idx))
+        if slist == tlist:
+            return True
+        return False
+
+        # hasheds = {}
+        # for ind, ch in enumerate(s):
+        #     if ch in hasheds:
+        #         hasheds[ch].add(ind)
+        #     else:
+        #         hasheds[ch] = {
+        #             ind,
+        #         }
+        # hashedt = {}
+        # for ind, ch in enumerate(t):
+        #     if ch in hashedt:
+        #         hashedt[ch].add(ind)
+        #     else:
+        #         hashedt[ch] = {
+        #             ind,
+        #         }
+        # return tuple(hasheds.values()) == tuple(hashedt.values())
+
+    def isSubsequence(self, s, t):
+        """
+        :type s: str
+        :type t: str
+        :rtype: bool
+        """
+        for ch in s:
+            chSearch = t.find(ch)
+            if chSearch == -1:
+                return False
+            else:
+                t = t[chSearch + 1:]
+        return True
+
+        # t = "".join([tt for tt in t if tt in s])
+        # if t.find(s) != -1:
+        #     return True
+        # return False
 
     def combinationSum2(self, candidates: List[int], target: int) -> List[List[int]]:
 
@@ -269,14 +341,14 @@ class Solutions:
         dfs(0, [], target)
         return res
 
-    def sequentialDigits(self, low: int, high: int) -> List[int]:
+    def sequentialDigits2(self, low: int, high: int) -> List[int]:
         possible_digits = "123456789"
         res = []
         nl, nh = len(str(low)), len(str(high))
 
         for i in range(nl, nh + 1):
             for j in range(0, 10 - i):
-                num = int(possible_digits[j : j + 1])
+                num = int(possible_digits[j: j + 1])
                 if num < low and num <= high:
                     res.append(num)
         print(res)
@@ -348,8 +420,8 @@ class Solutions:
         input_list[idx], input_list[min_idx] = input_list[min_idx], input_list[idx]
         return input_list
 
-    l = [19, 2, 31, 45, 30, 11, 121, 27]
-    sorted_l = selection_sort(l)
+    test_list = [19, 2, 31, 45, 30, 11, 121, 27]
+    sorted_l = selection_sort(test_list)
     print(sorted_l)
 
     def containsNearbyDuplicate(self, nums: List[int], k: int) -> bool:
@@ -382,16 +454,58 @@ class Solutions:
                 index += 1
         return words
 
+    def findAnagrams(self, s: str, p: str) -> List[int]:
+        hashmap = defaultdict(int)
+        res = []
+        plen = len(p)
+        slen = len(s)
+
+        if plen > slen:
+            return []
+
+        # map p letters
+        for ch in p:
+            hashmap[ch] += 1
+
+        # go through the window
+        for i in range(plen - 1):
+            if s[i] in hashmap:
+                hashmap[s[i]] -= 1
+
+        # slide the window from the end
+        for i in range(-1, slen - plen + 1):
+            if i > -1 and s[i] in hashmap:
+                hashmap[s[i]] += 1
+            if i + plen < slen and s[i + plen] in hashmap:
+                hashmap[s[i + plen]] -= 1
+
+            # check whether we found an anagram
+            if all(v == 0 for v in hashmap.values()):
+                res.append(i + 1)
+
+        return res
+        # Not optimised
+        # res = []
+        # first = 0
+        # second = first + len(p)
+        # while first < len(s):
+        #     if s[first] in p:
+        #         if sorted(s[first:second]) == sorted(p):
+        #             res.append(first)
+        #     first += 1
+        #     second += 1
+        # return res
+
     def twoSum(self, nums: List[int], target: int) -> List[int]:
 
         for index, value in enumerate(nums):
-            print(nums[index + 1 :])
-            if target - value in nums[index + 1 :]:
+            print(nums[index + 1:])
+            if target - value in nums[index + 1:]:
                 print(len(nums))
                 return (
                     [0, 1]
                     if len(nums) == 2
-                    else [index, nums[index + 1 :].index(target - value)]
+                    else [index, nums[index + 1:].index(target - value)]
                 )
         return
 
@@ -421,6 +535,19 @@ class Solutions:
             res.append(hashmap[anagram])
         return res
 
+    def isHappy(self, n: int) -> bool:
+        if n < 0:
+            return False
+
+        hset = set()  # hset for check looping
+        while n != 1:
+            if n in hset:
+                return False
+            else:
+                hset.add(n)
+                n = sum([int(d) ** 2 for d in str(n)])
+        return True
+
     def topKFrequent(self, nums: List[int], k: int) -> List[int]:
         hashmap = {}
         freq = [[] for i in range(len(nums) + 1)]  # bucket for our nums
@@ -437,6 +564,11 @@ class Solutions:
                 res.append(n)
             if len(res) == k:
                 return res
+
+    def topKFrequent2(self, words: List[str], k: int) -> List[str]:
+        wordsC = Counter(sorted(words))
+        top_k = wordsC.most_common(k)
+        return [s[0] for s in top_k]
 
     def isPalindrome(self, s: str) -> bool:
         start = 0
@@ -500,7 +632,7 @@ class Solutions:
                 else:
                     res.append([a, nums[left], nums[right]])
                     while nums[left] == nums[left - 1] and left < right:
-                        l += 1
+                        left += 1
         return True
 
     def maxProfit(self, prices: List[int]) -> int:
@@ -549,6 +681,17 @@ class Solutions:
                 left += 1
             res = max(res, r - left + 1)  # size of the window
         return res
+
+    def getHint(self, secret: str, guess: str) -> str:
+        from collections import Counter
+
+        badN = Counter(secret) - Counter(guess)
+        correct = 0
+        for i in range(len(secret)):
+            if secret[i] == guess[i]:
+                correct += 1
+        count = len(secret) - sum(badN.values()) - correct
+        return f"{correct}A{count}B"
 
     def generateParenthesis(self, n: int) -> List[str]:
         # can't start with closed paranthesis and add if closed < open
@@ -645,7 +788,7 @@ class Solutions:
             head = temp.pushNode(head, i)
             temp.printNode(head)
 
-        if head != None:
+        if head:
             midlen = temp.getLen(head) // 2
             while midlen != 0:
                 head = head.next
@@ -664,7 +807,7 @@ class Solutions:
 
         for i in range(n):
             fast = fast.next
-        if fast == None:
+        if not fast:
             head = head.next
         else:
             while fast.next:
@@ -709,6 +852,24 @@ class Solutions:
 
         return dummy.next
 
+    def mergeTwoLists2(self, list1, list2):
+        """
+        :type list1: Optional[ListNode]
+        :type list2: Optional[ListNode]
+        :rtype: Optional[ListNode]
+        """
+        if not list1:
+            return list2  # for sure add remaining nodes
+        if not list2:
+            return list1
+
+        if list1.val <= list2.val:
+            list1.next = self.mergeTwoLists(list1.next, list2)
+            return list1
+        else:
+            list2.next = self.mergeTwoLists(list2.next, list1)
+            return list2
+
     def reorderList(self, head: Optional[ListNode]) -> None:
         """
         Do not return anything, modify head in-place instead.
@@ -750,6 +911,22 @@ class Solutions:
                 return True
         return False
 
+    def detectCycle(self, head):
+        """
+        :type head: ListNode
+        :rtype: ListNode
+        """
+        slow = fast = head
+
+        while fast and fast.next:
+            slow = slow.next
+            fast = fast.next.next
+            if slow == fast:  # find the cycle
+                while slow != head:
+                    slow, head = slow.next, head.next  # find the meet of slow and head
+                return slow
+        return None
+
     def findDuplicate(self, nums: List[int]) -> int:
         slow, fast = 0, 0
 
@@ -766,6 +943,20 @@ class Solutions:
             slow2 = nums[slow2]
             if slow == slow2:
                 return slow
+
+    # Tree traversal
+    # N-ary Tree Preorder Traversal
+    def preorder(self, root: "Node") -> List[int]:
+        res = []
+
+        def dfs(root, res):
+            if root:
+                res.append(root.val)
+                for child in root.children:
+                    dfs(child, res)
+
+        dfs(root, res)
+        return res
 
     # DFS
     def invertTree(self, root: Optional[TreeNode]) -> Optional[TreeNode]:
@@ -787,7 +978,7 @@ class Solutions:
             return 0
 
         # recursive DFS
-        # return 1+max(self.maDepth(root.left),self.maDepth(root.right))
+        # return 1+max(self.maxDepth(root.left),self.maDepth(root.right))
         # iterative pre-order DFS (Stack)
         stack = [[root, 1]]
         res = 0
@@ -807,7 +998,7 @@ class Solutions:
         q = deque([root])
         while q:
 
-            for i in range(len(q)):
+            for _ in range(len(q)):
                 node = q.popleft()
                 if node.left:
                     q.append(node.left)
@@ -889,27 +1080,43 @@ class Solutions:
 
         return valid(root, float("-inf"), float("inf"))
 
+    def isValidBST2(self, root: Optional[TreeNode]) -> bool:
+        def validate(node, left, right):
+            """each iteration we move each of elements
+            from left to right, than from right to left"""
+            if not node:
+                return True
+            if left is not None and node.val <= left:
+                return False
+            if right is not None and node.val >= right:
+                return False
+            return validate(node.left, left, node.val) and validate(
+                node.right, node.val, right
+            )
+
+        return validate(root, None, None)
+
     def findKthLargest(self, nums: List[int], k: int) -> int:
         # nums.sort()
         # return nums[len(nums) - k]
 
         k = len(nums) - k
 
-        def quickSelect(l, r):
-            if l == r:
-                return nums[l]
+        def quickSelect(left, right):
+            if left == right:
+                return nums[left]
 
-            pivot, p = nums[r], l
-            for i in range(l, r):
+            pivot, p = nums[right], left
+            for i in range(left, right):
                 if nums[i] <= pivot:
                     nums[p], nums[i] = nums[i], nums[p]
                     p += 1
-            nums[p], nums[r] = nums[r], nums[p]
+            nums[p], nums[right] = nums[right], nums[p]
 
             if p > k:
-                return quickSelect(l, p - 1)
+                return quickSelect(left, p - 1)
             elif p < k:
-                return quickSelect(p + 1, r)
+                return quickSelect(p + 1, right)
             else:
                 return nums[p]
 
@@ -930,9 +1137,10 @@ class Solutions:
         stones.append(0)  # if our heap is empty
         return abs(stones[0])
 
-    def combinationSum(self, candidates: List[int], target: int) -> List[List[int]]:
+    def combinationSum3(self, candidates: List[int], target: int) -> List[List[int]]:
         if target < 1:
             return []
+        
         # We will try to make dfs
         def dfs(item, current, proceded_sum):
             if proceded_sum == target:
@@ -950,31 +1158,31 @@ class Solutions:
         dfs(0, [], 0)
         return res
 
-    def combinationSum2(self, candidates: List[int], target: int) -> List[List[int]]:
+    # def combinationSum2(self, candidates: List[int], target: int) -> List[List[int]]:
 
-        # Need to sort first for the  help to find duplicates while traversing the tree
-        candidates.sort()
+    #     # Need to sort first for the  help to find duplicates while traversing the tree
+    #     candidates.sort()
 
-        def dfs(item, current, target):
-            if target == 0:  # found target
-                res.append(current[:])
-            if target <= 0:
-                return
+    #     def dfs(item, current, target):
+    #         if target == 0:  # found target
+    #             res.append(current[:])
+    #         if target <= 0:
+    #             return
 
-            # to except duplicates
-            previous = -1  # to except diplicates
-            for i in range(item, len(candidates)):
-                if candidates[i] == previous:
-                    continue
+    #         # to except duplicates
+    #         previous = -1  # to except diplicates
+    #         for i in range(item, len(candidates)):
+    #             if candidates[i] == previous:
+    #                 continue
 
-                current.append(candidates[i])
-                dfs(i + 1, current, target - candidates[i])
-                current.pop()
-                previous = candidates[i]
+    #             current.append(candidates[i])
+    #             dfs(i + 1, current, target - candidates[i])
+    #             current.pop()
+    #             previous = candidates[i]
 
-        res = []
-        dfs(0, [], target)
-        return res
+    #     res = []
+    #     dfs(0, [], target)
+    #     return res
 
     def partition(self, s: str) -> List[List[str]]:
         res, part = [], []
@@ -985,18 +1193,18 @@ class Solutions:
                 return
             for j in range(i, len(s)):
                 if self.isPali(s, i, j):
-                    part.append(s[i : j + 1])
+                    part.append(s[i:j + 1])
                     dfs(j + 1)
                     part.pop()
 
         dfs(0)
         return res
 
-    def isPali(self, s, l, r):
-        while l < r:
-            if s[l] != s[r]:
+    def isPali(self, s, left, right):
+        while left < right:
+            if s[left] != s[right]:
                 return False
-            l, r = l + 1, r - 1
+            left, right = left + 1, right - 1
         return True
 
     def letterCombinations(self, digits: str) -> List[str]:
@@ -1023,6 +1231,28 @@ class Solutions:
             backtrack(0, "")
 
         return res
+
+    def floodFill(
+        self, image: List[List[int]], sr: int, sc: int, color: int
+    ) -> List[List[int]]:
+
+        if image[sr][sc] == color:
+            return image
+
+        def fill(r, c, col):
+            if image[r][c] == col:
+                image[r][c] = color
+                if r > 0:  # check left raw direction
+                    fill(r - 1, c, col)
+                if r + 1 < len(image):  # check right raw direction
+                    fill(r + 1, c, col)
+                if c > 0:  # check upper column direction
+                    fill(r, c - 1, col)
+                if c + 1 < len(image[0]):  # check bottom column direction
+                    fill(r, c + 1, col)
+
+        fill(sr, sc, image[sr][sc])
+        return image
 
     def orangesRotting(self, grid: List[List[int]]) -> int:
         # implement multi sorce BFS
@@ -1105,6 +1335,7 @@ class Solutions:
 
         # BFS
         def bfs(r, c):
+            import collections
             q = collections.deque()
             visit.add((r, c))
             q.append((r, c))
@@ -1128,6 +1359,27 @@ class Solutions:
                 if grid[r][c] == "1" and (r, c) not in visit:
                     bfs(r, c)
                     islands += 1
+        # Binary Tree Level Order Traversal
+
+    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:
+        if root is None:
+            return
+
+        queue = []
+        res = []
+
+        queue.append(root)
+        while len(queue) > 0:
+            inner_list = []
+            for _ in range(len(queue)):
+                node = queue.pop(0)
+                if node:
+                    inner_list.append(node.val)
+                    queue.append(node.left)
+                    queue.append(node.right)
+            if inner_list:
+                res.append(inner_list)
+        return res
 
     def maxAreaOfIsland(self, grid: List[List[int]]) -> int:
         ROWS, COLS = len(grid), len(grid[0])
@@ -1161,36 +1413,6 @@ class Solutions:
             preMap[crs].append(pre)
 
         visiting = set()
-
-        def dfs(crs):
-            if crs in visiting:
-                return False
-            if preMap[crs] == []:
-                return True
-
-            visiting.add(crs)
-            for pre in preMap[crs]:
-                if not dfs(pre):
-                    return False
-            visiting.remove(crs)
-            preMap[crs] = []
-            return True
-
-        for c in range(numCourses):
-            if not dfs(c):
-                return False
-        return True
-
-    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:
-
-        # dfs
-        preMap = {i: [] for i in range(numCourses)}
-
-        # map each course to : prereq list
-        for crs, pre in prerequisites:
-            preMap[crs].append(pre)
-
-        visiting = set()  # store all the courses along dfs
 
         def dfs(crs):
             if crs in visiting:
@@ -1261,12 +1483,13 @@ class Solutions:
 
         for x in range(2, n + 2):
             if x not in dic:
-                # we calculate the sum of 2 previous numbers and check if the value in dictionary where we store the index and fibonacci number
+                # calculate the sum of 2 previous numbers
+                # and check if the value in dictionary where we store the index and fibonacci number
                 dic[x] = dic[x - 1] + dic[x - 2]
         return dic[n]
 
     # @cache
-    def fib(self, n: int) -> int:
+    def fib_cached(self, n: int) -> int:
         return self.fib(n - 2) + self.fib(n - 1) if n >= 2 else n
 
     def minCostClimbingStairs(self, cost: List[int]) -> int:
@@ -1310,12 +1533,12 @@ class Solutions:
             res += self.countPali(s, i, i + 1)
         return res
 
-    def countPali(self, s, l, r):
+    def countPali(self, s, left, right):
         res = 0
-        while l >= 0 and r < len(s) and s[l] == s[r]:
+        while left >= 0 and right < len(s) and s[left] == s[right]:
             res += 1
-            l -= 1
-            r += 1
+            left -= 1
+            right += 1
         return res
 
     def longestPalindrome(self, s: str) -> str:
@@ -1328,27 +1551,42 @@ class Solutions:
 
         for i in range(len(s)):
             # odd length
-            l, r = i, i
+            left, right = i, i
             while (
-                l >= 0 and r < len(s) and s[l] == s[r]
+                left >= 0 and right < len(s) and s[left] == s[right]
             ):  # starting in the middle and expending outwords
                 if (
-                    r - l + 1
+                    right - left + 1
                 ) > resLen:  # lenght of the palindrome is graeter when the current
-                    res = s[l : r + 1]
-                    resLen = r - l + 1
-                l -= 1  # expend  to the left
-                r += 1  # expend  to the right
+                    res = s[left:right + 1]
+                    resLen = right - left + 1
+                left -= 1  # expend  to the left
+                right += 1  # expend  to the right
 
             # even length
-            l, r = i, i + 1
-            while l >= 0 and r < len(s) and s[l] == s[r]:
-                if (r - l + 1) > resLen:
-                    res = s[l : r + 1]
-                    resLen = r - l + 1
-                l -= 1
-                r += 1
+            left, right = i, i + 1
+            while left >= 0 and right < len(s) and s[left] == s[right]:
+                if (right - left + 1) > resLen:
+                    res = s[left:right + 1]
+                    resLen = right - left + 1
+                left -= 1
+                right += 1
         return res
+
+    def longestPalindrome2(self, s):
+        """
+        :type s: str
+        :rtype: int
+        """
+        if len(s) == s.count(s[0]):
+            return len(s)
+        odd_s_hash = {
+            syl: s.count(syl) % 2 != 0 for syl in s if (s.count(syl) % 2 != 0)
+        }
+        if len(odd_s_hash) > 1:
+            return len(s) - (len(odd_s_hash) - 1)
+        else:
+            return len(s)
 
     def numDecodings(self, s: str) -> int:
         # Memoization
@@ -1386,6 +1624,26 @@ class Solutions:
             ):
                 dp[i] += dp[i + 2]
         return dp[0]
+
+    def uniquePaths(self, m: int, n: int) -> int:
+        # using memoisation
+        def dfs(i, j):
+            if i >= m or j >= n:
+                return 0
+            if i == m - 1 and j == n - 1:
+                return 1
+            return dfs(i + 1, j) + dfs(i, j + 1)
+
+        return dfs(0, 0)
+
+    def uniquePaths2(self, m, n):
+        from itertools import product
+
+        # with help of tabulation
+        dp = [[1] * n for i in range(m)]
+        for i, j in product(range(1, m), range(1, n)):
+            dp[i][j] = dp[i - 1][j] + dp[i][j - 1]
+        return dp[-1][-1]
 
     def maxSubArray(self, nums: List[int]) -> int:
         # sliding wondow
@@ -1443,7 +1701,7 @@ class Solutions:
             end += 1
         return -1
 
-    def canCompleteCircuit(self, gas: List[int], cost: List[int]) -> int:
+    def canCompleteCircuit2(self, gas: List[int], cost: List[int]) -> int:
         if sum(gas) < sum(cost):
             return -1
 
@@ -1483,8 +1741,31 @@ class Solutions:
         # Write your code here
         arr = sorted(arr)
         min = str(sum(arr[0:4]))
-        max = str(sum(arr[len(arr) : 0 : -1]))
+        max = str(sum(arr[len(arr):0: -1]))
         print(f"{min} {max}")
+
+    def backspaceCompare(self, s: str, t: str) -> bool:
+        from collections import deque
+
+        s = deque(s)
+        t = deque(t)
+
+        def removeEmpty(st) -> set:
+            s_chToDel = 0
+            sres = []
+            while st:
+                spop = st.pop()
+                if spop == "#":
+                    s_chToDel += 1
+                else:
+                    if s_chToDel < 1:
+                        sres.append(spop)
+                    else:
+                        if st:
+                            s_chToDel -= 1
+            return sres
+
+        return removeEmpty(s) == removeEmpty(t)
 
     def productExceptSelf(self, nums: List[int]) -> List[int]:
         # let's try sliding window
@@ -1613,7 +1894,7 @@ class Solutions:
     def reverseWords(self, s: str) -> str:
         s_list = s.split()
         print(s_list.reverse)
-        #' '.join([reversed(ss) for ss in s_list])
+        # ' '.join([reversed(ss) for ss in s_list])
         return " ".join([ss[::-1] for ss in s_list])
 
     def checkInclusion(self, s1: str, s2: str) -> bool:
@@ -1629,66 +1910,37 @@ class Solutions:
         for i in range(26):
             matches += 1 if s1Count[i] == s2Count[i] else 0
 
-        l = 0
-        for r in range(len(s1), len(s2)):
+        left = 0
+        for right in range(len(s1), len(s2)):
             if matches == 26:
                 return True
 
-            index = ord(s2[r]) - ord("a")  # add  the charachter
+            index = ord(s2[right]) - ord("a")  # add  the charachter
             s2Count[index] += 1
             if s1Count[index] == s2Count[index]:
                 matches += 1
             elif s1Count[index] + 1 == s2Count[index]:
                 matches -= 1
 
-            index = ord(s2[l]) - ord("a")  # remove from th eleft side
+            index = ord(s2[left]) - ord("a")  # remove from th eleft side
             s2Count[index] -= 1
             if s1Count[index] == s2Count[index]:
                 matches += 1
             elif s1Count[index] - 1 == s2Count[index]:
                 matches -= 1
-            l += 1
+            left += 1
         return matches == 26
 
-    # functional programmong(pure funtions,
-    #                       don't change itrenal val,
-    #                       )
-    def try_reduce(self):
-        from functools import reduce
+    def spiralOrder(self, matrix: List[List[int]]) -> List[int]:
+        def rotate_matrix(m):  # rotate the matrix counterclockwise by 90 degrees
+            return [[m[row][col] for row in range(len(m))] for col in range(len(m[0])-1, -1, -1)]
 
-        print(reduce(lambda x, y: [y] + x, list(range(5)), []))
-
-        l = [0, 1, 2, 3, 4, 5, 6]
-
-        def f1(x):
-            return x * 2
-
-        def f2(x):
-            if x % 2 == 0:
-                return True
-
-        res = [f1(x) for x in l if f2(x)]
-
-        res2 = list(map(f1, list(filter(f2, l))))
-
-
-# Python possibilities
-def tuple_unpacking():
-    fruits = ("apple", "banana", "cherry", "strawberry", "raspberry")
-
-    (green, yellow, *red) = fruits
-
-    print(green)
-    print(yellow)
-    print(red)
-
-
-def tuple_multiplay(tup: tuple, num: int) -> tuple:
-    return tup * num
-
-
-def format_pycode(val):
-    print("{.2f}".format(3.142))
+        res = []
+        res.extend(matrix.pop(0))
+        while matrix:
+            matrix = rotate_matrix(matrix)
+            res.extend(matrix.pop(0))
+        return res
 
 
 sol = Solutions()
@@ -1711,16 +1963,38 @@ node = Node()
 
 # result = map(lambda x, y: x + (y ^ 2), test_typle_1, test_typle_2)
 # print(list(result))
-def test_yeild():
-    test_typ = ("slfg", "45", "", " ", "456")
-    test_item = 0
-    while len(test_typ):
-        yield test_item
-        print("What?")
-        test_item = +1
 
 
-for item in test_yeild():
-    if item:
-        break
-    print("I am done!")
+# Sorting
+def quickSort(arr, low, high):
+    import random
+    if low >= high:
+        return
+    pivot = random.choice(arr[low: high - 1])
+    i = low
+    j = high
+
+    while i < j:
+        while arr[i] < pivot:
+            i += 1
+        while arr[j] > pivot:
+            j -= 1
+        if i < j:
+            arr[i], arr[j] = arr[j], arr[i]
+            i += 1
+            j -= 1
+            quickSort(arr, low, j)
+            quickSort(arr, i, high)
+
+
+def binSearch(arr, item):
+    low, high = 0, len(arr)-1
+    while low <= high:
+        mid = low + (high - low)//2
+        if arr[mid] > item:
+            high = mid - 1
+        if arr[mid] < item:
+            low = mid + 1
+        else:
+            return mid
+    return -1
